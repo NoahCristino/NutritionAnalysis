@@ -1,5 +1,10 @@
 from classes import *
 import csv
+import numpy as py
+from scipy.optimize import nnls
+
+food_list = []
+
 with open('nutrition.csv', newline='') as csvfile:
      reader = csv.DictReader(csvfile)
      its = 10
@@ -28,7 +33,41 @@ with open('nutrition.csv', newline='') as csvfile:
          else:
              folate_per_gram = 0
          f = Food(row['name'], total_fat_per_gram, sat_fat_per_gram, cholesterol_per_gram, calories_per_gram, sodium_per_gram, choline_per_gram, folate_per_gram)
-         #print(f)
+         food_list.append(f)
          it_count = it_count + 1
          if it_count == its:
              break
+
+
+calories_list = []
+sat_fat_list = []
+total_fat_list = []
+for i in range(0, 10):
+    calories_list.append(food_list[i].calories)
+    sat_fat_list.append(food_list[i].sat_fat)
+    total_fat_list.append(food_list[i].total_fat)
+A = [calories_list, sat_fat_list, total_fat_list]
+target_calories = 150
+target_sat_fat = 5
+target_total_fat = 25
+B = py.array([target_calories, target_sat_fat, target_total_fat])
+x = nnls(A,B)
+i = 0
+cals = 0
+satfat = 0
+totalfat = 0
+names = []
+for scale in x[0]:
+    cals = cals + (scale * food_list[i].calories)
+    satfat = satfat + (scale * food_list[i].sat_fat)
+    totalfat = totalfat + (scale * food_list[i].total_fat)
+    names.append(food_list[i].name)
+    i = i + 1
+for idx, name in enumerate(names):
+    print(str("{:.2f}".format(x[0][idx]))+" grams "+name)
+print("========================================================================")
+print("target: "+str(target_calories)+", actual: "+str(cals)+", difference: "+str(target_calories-cals))
+print("target: "+str(target_sat_fat)+", actual: "+str(satfat)+", difference: "+str(target_sat_fat-satfat))
+print("target: "+str(target_total_fat)+", actual: "+str(totalfat)+", difference: "+str(target_total_fat-totalfat))
+error_score = abs(target_calories-cals) + abs(target_sat_fat-satfat) + abs(target_total_fat-totalfat)
+print("error score: "+str(error_score))
