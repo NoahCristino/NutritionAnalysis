@@ -2,14 +2,15 @@ from classes import *
 import csv
 import numpy as py
 from scipy.optimize import nnls
+from tqdm import tqdm
 
 food_list = []
 
 with open('nutrition.csv', newline='') as csvfile:
      reader = csv.DictReader(csvfile)
-     its = 10
+     its = 100
      it_count = 0
-     for row in reader:
+     for row in tqdm(reader):
          total_fat_per_gram = float(row['total_fat'][:-1])*(1/float(row['serving_size'][:-2]))
          if row['cholesterol'] != '0':
              cholesterol_per_gram = (float(row['cholesterol'][:-2])/1000)*(1/float(row['serving_size'][:-2]))
@@ -38,36 +39,52 @@ with open('nutrition.csv', newline='') as csvfile:
          if it_count == its:
              break
 
+def predict(foodlist, target_calories, target_sat_fat, target_total_fat, verbose=False):
+    calories_list = []
+    sat_fat_list = []
+    total_fat_list = []
+    for food in foodlist:
+        calories_list.append(food.calories)
+        sat_fat_list.append(food.sat_fat)
+        total_fat_list.append(food.total_fat)
+    A = [calories_list, sat_fat_list, total_fat_list]
+    B = py.array([target_calories, target_sat_fat, target_total_fat])
+    x = nnls(A,B)
+    i = 0
+    cals = 0
+    satfat = 0
+    totalfat = 0
+    names = []
+    for scale in x[0]:
+        cals = cals + (scale * food_list[i].calories)
+        satfat = satfat + (scale * food_list[i].sat_fat)
+        totalfat = totalfat + (scale * food_list[i].total_fat)
+        names.append(food_list[i].name)
+        i = i + 1
+    for idx, name in enumerate(names):
+        if verbose:
+            print(str("{:.2f}".format(x[0][idx]))+" grams "+name)
+    if verbose:
+        print("========================================================================")
+        print("target: "+str(target_calories)+", actual: "+str(cals)+", difference: "+str(target_calories-cals))
+        print("target: "+str(target_sat_fat)+", actual: "+str(satfat)+", difference: "+str(target_sat_fat-satfat))
+        print("target: "+str(target_total_fat)+", actual: "+str(totalfat)+", difference: "+str(target_total_fat-totalfat))
+    error_score = abs(target_calories-cals) + abs(target_sat_fat-satfat) + abs(target_total_fat-totalfat)
+    if verbose:
+        print("error score: "+str(error_score))
+    return error_score
 
-calories_list = []
-sat_fat_list = []
-total_fat_list = []
-for i in range(0, 10):
-    calories_list.append(food_list[i].calories)
-    sat_fat_list.append(food_list[i].sat_fat)
-    total_fat_list.append(food_list[i].total_fat)
-A = [calories_list, sat_fat_list, total_fat_list]
-target_calories = 150
-target_sat_fat = 5
-target_total_fat = 25
-B = py.array([target_calories, target_sat_fat, target_total_fat])
-x = nnls(A,B)
-i = 0
-cals = 0
-satfat = 0
-totalfat = 0
-names = []
-for scale in x[0]:
-    cals = cals + (scale * food_list[i].calories)
-    satfat = satfat + (scale * food_list[i].sat_fat)
-    totalfat = totalfat + (scale * food_list[i].total_fat)
-    names.append(food_list[i].name)
-    i = i + 1
-for idx, name in enumerate(names):
-    print(str("{:.2f}".format(x[0][idx]))+" grams "+name)
-print("========================================================================")
-print("target: "+str(target_calories)+", actual: "+str(cals)+", difference: "+str(target_calories-cals))
-print("target: "+str(target_sat_fat)+", actual: "+str(satfat)+", difference: "+str(target_sat_fat-satfat))
-print("target: "+str(target_total_fat)+", actual: "+str(totalfat)+", difference: "+str(target_total_fat-totalfat))
-error_score = abs(target_calories-cals) + abs(target_sat_fat-satfat) + abs(target_total_fat-totalfat)
-print("error score: "+str(error_score))
+from itertools import combinations
+import random
+options = list(combinations(food_list, 2))
+#selection = random.choice(options)
+#print(selection)
+#print(len(options))
+lowest_error = 99999
+lowest_combo = None
+for option in tqdm(options):
+    e = predict(option, 2000, 100, 0)
+    if e < lowest_error:
+        lowest_error = e
+        lowest_combo = option
+e = predict(lowest_combo, 2000, 100, 0, True)
