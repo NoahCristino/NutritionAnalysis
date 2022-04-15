@@ -4,6 +4,11 @@ import csv
 import numpy as py
 from scipy.optimize import nnls
 from tqdm import tqdm
+from flask import Flask, render_template
+from itertools import combinations
+import random
+
+app = Flask(__name__)
 
 food_list = []
 
@@ -63,42 +68,45 @@ def predict(foodlist, target_calories, target_carbs, target_protein, target_fat,
         print("error score: "+str(error_score))
     return error_score
 
-from itertools import combinations
-import random
-order_length = int(argv[2])
-#selection = random.choice(options)
-#print(selection)
-#print(len(options))
-lowest_error = 99999
-lowest_combo = None
-random_sampling = True
-random_count = int(argv[1])
-random_target = 80
-random_mode = True #true is random for random_count iterations, false is til reaches below random_target
-if random_sampling == False:
-    options = list(combinations(food_list, order_length)) #len = c(len(food_list), order_length)) = 20c5 = 15504
-    for option in options:
-        e = predict(option, 3506, 468, 145, 117)
-        if e < lowest_error:
-            lowest_error = e
-            lowest_combo = option
-else:
-    if random_mode:
-        for i in range(random_count):
-            option = []
-            for i in range(order_length):
-                option.append(random.choice(food_list))
+def run(random_count, order_length):
+    #order_length = int(argv[2])
+    #selection = random.choice(options)
+    #print(selection)
+    #print(len(options))
+    lowest_error = 99999
+    lowest_combo = None
+    random_sampling = True
+    #random_count = int(argv[1])
+    random_target = 80
+    random_mode = True #true is random for random_count iterations, false is til reaches below random_target
+    if random_sampling == False:
+        options = list(combinations(food_list, order_length)) #len = c(len(food_list), order_length)) = 20c5 = 15504
+        for option in options:
             e = predict(option, 3506, 468, 145, 117)
             if e < lowest_error:
                 lowest_error = e
                 lowest_combo = option
     else:
-        while lowest_error > random_target:
-            option = []
-            for i in range(order_length):
-                option.append(random.choice(food_list))
-            e = predict(option, 3506, 468, 145, 117, 0)
-            if e < lowest_error:
-                lowest_error = e
-                lowest_combo = option
-e = predict(lowest_combo, 3506, 468, 145, 117, 1)
+        if random_mode:
+            for i in range(random_count):
+                option = []
+                for i in range(order_length):
+                    option.append(random.choice(food_list))
+                e = predict(option, 3506, 468, 145, 117)
+                if e < lowest_error:
+                    lowest_error = e
+                    lowest_combo = option
+        else:
+            while lowest_error > random_target:
+                option = []
+                for i in range(order_length):
+                    option.append(random.choice(food_list))
+                e = predict(option, 3506, 468, 145, 117, 0)
+                if e < lowest_error:
+                    lowest_error = e
+                    lowest_combo = option
+    e = predict(lowest_combo, 3506, 468, 145, 117, 1)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
