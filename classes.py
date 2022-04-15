@@ -1,14 +1,11 @@
 class Food:
-  def __init__(self, name, total_fat, sat_fat, cholesterol, calories, sodium, choline, folate):
+  def __init__(self, name, calories, carbs, protein, fat):
     self.name = name
-    self.total_fat = total_fat
-    self.cholesterol = cholesterol
     self.calories = calories
-    self.sodium = sodium
-    self.sat_fat = sat_fat
-    self.choline = choline
-    self.folate = folate
+    self.carbs = carbs
+    self.protein = protein
+    self.fat = fat
   def __str__(self):
-    return self.name + ": calories: " + str(self.calories) + ", total_fat: "+str(self.total_fat)+", sat_fat: "+str(self.sat_fat)+", sodium: "+str(self.sodium)+", cholesterol: "+str(self.cholesterol)+", choline: "+str(self.choline)+", folate: "+str(self.folate)
+    return self.name + ": calories: " + str(self.calories) + ", carbs: " + self.carbs + ", protein: "+self.protein+", fat: "+self.fat
   def List(self):
-    return [self.calories, self.total_fat, self.sat_fat, self.sodium, self.cholesterol, self.choline, self.folate]
+    return [self.calories, self.carbs, self.protein, self.fat]
