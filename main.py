@@ -118,8 +118,7 @@ def index():
     if request.method == "POST":
         req = request.form
         r = run(int(req['random_count']), int(req['order_length']), int(req['target_calories']), int(req['target_carbs']), int(req['target_protein']), int(req['target_fat']))
-        print(r[1])
-        print(r[2])
+        print(r)
     if r == None:
         return render_template('index.html') 
     return render_template('index.html', foods=r[1], quantities=r[2], total=r[3])
