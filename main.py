@@ -101,4 +101,4 @@ else:
             if e < lowest_error:
                 lowest_error = e
                 lowest_combo = option
-e = predict(lowest_combo, 3506, 468, 145, 117, 2)
+e = predict(lowest_combo, 3506, 468, 145, 117, 1)
