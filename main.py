@@ -4,7 +4,7 @@ import csv
 import numpy as py
 from scipy.optimize import nnls
 from tqdm import tqdm
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect
 from itertools import combinations
 import random
 
@@ -54,9 +54,13 @@ def predict(foodlist, target_calories, target_carbs, target_protein, target_fat,
         
         names.append(food_list[i].name)
         i = i + 1
+    foods = []
+    food_amounts = []
     for idx, name in enumerate(names):
         if verbose == 1:
             print(str("{:.2f}".format(x[0][idx]))+" grams "+name)
+        foods.append(name)
+        food_amounts.append(x[0][idx])
     if verbose == 1:
         print("========================================================================")
         print("target calories: "+str(target_calories)+", actual: "+str(cals)+", difference: "+str(target_calories-cals))
@@ -66,9 +70,9 @@ def predict(foodlist, target_calories, target_carbs, target_protein, target_fat,
     error_score = abs(target_calories-cals) + abs(target_carbs-carbs) + abs(target_protein-protein) + abs(target_fat-fat)
     if verbose == 1 or verbose == 2:
         print("error score: "+str(error_score))
-    return error_score
+    return (error_score, foods, food_amounts, [cals, carbs, protein, fat])
 
-def run(random_count, order_length):
+def run(random_count, order_length, target_calories, target_carbs, target_protein, target_fat):
     #order_length = int(argv[2])
     #selection = random.choice(options)
     #print(selection)
@@ -82,7 +86,7 @@ def run(random_count, order_length):
     if random_sampling == False:
         options = list(combinations(food_list, order_length)) #len = c(len(food_list), order_length)) = 20c5 = 15504
         for option in options:
-            e = predict(option, 3506, 468, 145, 117)
+            e = predict(option, target_calories, target_carbs, target_protein, target_fat)[0]
             if e < lowest_error:
                 lowest_error = e
                 lowest_combo = option
@@ -92,7 +96,7 @@ def run(random_count, order_length):
                 option = []
                 for i in range(order_length):
                     option.append(random.choice(food_list))
-                e = predict(option, 3506, 468, 145, 117)
+                e = predict(option, target_calories, target_carbs, target_protein, target_fat)[0]
                 if e < lowest_error:
                     lowest_error = e
                     lowest_combo = option
@@ -101,12 +105,21 @@ def run(random_count, order_length):
                 option = []
                 for i in range(order_length):
                     option.append(random.choice(food_list))
-                e = predict(option, 3506, 468, 145, 117, 0)
+                e = predict(option, target_calories, target_carbs, target_protein, target_fat)[0]
                 if e < lowest_error:
                     lowest_error = e
                     lowest_combo = option
-    e = predict(lowest_combo, 3506, 468, 145, 117, 1)
+    #e = predict(lowest_combo, target_calories, target_carbs, target_protein, target_fat, 0)[0]
+    return predict(lowest_combo, target_calories, target_carbs, target_protein, target_fat, 0)
 
-@app.route('/')
+@app.route('/', methods=["GET", "POST"])
 def index():
-    return render_template('index.html')
+    r = None
+    if request.method == "POST":
+        req = request.form
+        r = run(int(req['random_count']), int(req['order_length']), int(req['target_calories']), int(req['target_carbs']), int(req['target_protein']), int(req['target_fat']))
+        print(r[1])
+        print(r[2])
+    if r == None:
+        return render_template('index.html') 
+    return render_template('index.html', foods=r[1], quantities=r[2], total=r[3])
